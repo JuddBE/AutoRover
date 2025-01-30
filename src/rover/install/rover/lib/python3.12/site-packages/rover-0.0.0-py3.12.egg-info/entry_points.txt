@@ -1,0 +1,2 @@
+[console_scripts]
+my_node = rover.my_node:main

@@ -1,0 +1,150 @@
+<sdf version='1.10'>
+  <world name='dem_heightmap'>
+    <spherical_coordinates>
+      <surface_model>MOON_SCS</surface_model>
+      <latitude_deg>0</latitude_deg>
+      <longitude_deg>0</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+    <gravity>0 0 -1.6200000000000001</gravity>
+    <physics name='1ms' type='ignored'>
+      <dart>
+        <collision_detector>bullet</collision_detector>
+        <solver>
+          <solver_type>dantzig</solver_type>
+        </solver>
+      </dart>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    <gui fullscreen='false'>
+      <plugin name='3D View' filename='MinimalScene'>
+        <gz-gui>
+          <title>3D View</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='string' key='state'>docked</property>
+        </gz-gui>
+        <engine>ogre</engine>
+        <scene>scene</scene>
+        <ambient_light>0 0 0</ambient_light>
+        <background_color>0.8 0.8 0.8</background_color>
+        <camera_pose>-11.526359 19.527456 24.174088 0 0.559400 -0.989541</camera_pose>
+      </plugin>
+      <plugin name='Entity context menu' filename='EntityContextMenuPlugin'>
+        <gz-gui>
+          <property key='state' type='string'>floating</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </gz-gui>
+      </plugin>
+      <plugin name='Scene Manager' filename='GzSceneManager'>
+        <gz-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </gz-gui>
+      </plugin>
+      <plugin name='Interactive view control' filename='InteractiveViewControl'>
+        <gz-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </gz-gui>
+      </plugin>
+      <plugin name='Camera Tracking' filename='CameraTracking'>
+        <gz-gui>
+          <property key='resizable' type='bool'>false</property>
+          <property key='width' type='double'>5</property>
+          <property key='height' type='double'>5</property>
+          <property key='state' type='string'>floating</property>
+          <property key='showTitleBar' type='bool'>false</property>
+        </gz-gui>
+      </plugin>
+      <plugin name='World control' filename='WorldControl'>
+        <gz-gui>
+          <title>World control</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='bool' key='resizable'>false</property>
+          <property type='double' key='height'>72</property>
+          <property type='double' key='z'>1</property>
+          <property type='string' key='state'>floating</property>
+          <anchors target='3D View'>
+            <line own='left' target='left'/>
+            <line own='bottom' target='bottom'/>
+          </anchors>
+        </gz-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>true</start_paused>
+        <use_event>true</use_event>
+      </plugin>
+      <plugin name='World stats' filename='WorldStats'>
+        <gz-gui>
+          <title>World stats</title>
+          <property type='bool' key='showTitleBar'>false</property>
+          <property type='bool' key='resizable'>false</property>
+          <property type='double' key='height'>110</property>
+          <property type='double' key='width'>290</property>
+          <property type='double' key='z'>1</property>
+          <property type='string' key='state'>floating</property>
+          <anchors target='3D View'>
+            <line own='right' target='right'/>
+            <line own='bottom' target='bottom'/>
+          </anchors>
+        </gz-gui>
+        <sim_time>true</sim_time>
+        <real_time>true</real_time>
+        <real_time_factor>true</real_time_factor>
+        <iterations>true</iterations>
+      </plugin>
+      <plugin name='Component inspector' filename='ComponentInspector'>
+        <gz-gui>
+          <property type='string' key='state'>docked</property>
+        </gz-gui>
+      </plugin>
+      <plugin name='Entity tree' filename='EntityTree'>
+        <gz-gui>
+          <property type='string' key='state'>docked</property>
+        </gz-gui>
+      </plugin>
+    </gui>
+    <magnetic_field>5.5644999999999998e-06 2.2875799999999999e-05 -4.2388400000000002e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    <scene>
+      <ambient>0.400000006 0.400000006 0.400000006 1</ambient>
+      <background>0.699999988 0.699999988 0.699999988 1</background>
+      <shadows>true</shadows>
+    </scene>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Moon DEM</uri>
+      <name>moon</name>
+      <pose>0 0 212.29599999999999 0 0 0</pose>
+    </include>
+    <light name='sun' type='directional'>
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1</intensity>
+      <direction>-0.5 0.10000000000000001 -0.90000000000000002</direction>
+      <diffuse>0.800000012 0.800000012 0.800000012 1</diffuse>
+      <specular>0.200000003 0.200000003 0.200000003 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <linear>0.01</linear>
+        <constant>0.90000000000000002</constant>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light>
+  </world>
+</sdf>

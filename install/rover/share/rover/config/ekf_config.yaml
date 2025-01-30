@@ -1,0 +1,45 @@
+ekf_filter_node:
+  ros__parameters:
+    frequency: 50.0  # Update rate in hz
+    sensor_timeout: 0.1  # Timeout for sensors
+    two_d_mode: true
+
+    odom_frame: my_robot/odom
+    base_link_frame: my_robot/base_link
+    world_frame: my_robot/odom
+    odom_topic: /odom  # Output final odometry to position topic
+
+    # Inputs from IMU
+    imu0: /imu
+    imu0_config: [false, false, false,  #  x, y, z position
+                  true, true, true,  #  Roll, pitch, yaw
+                  false, false, false,  #  x, y, z velocity
+                  true, true, true]  #  Angular velocity
+
+    imu0_differential: false
+    imu0_queue_size: 10
+
+    # Inputs from wheel odom
+    odom0: /wheel/odom
+    odom0_config: [true, true, false,  # x, y, z position
+                  false, false, false,  # Roll, pitch, yaw
+                  true, true, false,  # x, y, z velocity
+                  false, false, false]  # Angular velocity
+
+    odom0_differential: false
+    odom0_queue_size: 10
+
+    # Process and measurement noise
+    process_noise_covariance: [0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.01, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.01, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.01, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.01, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.01]
+
+    initial_estimate_covariance: [1e-3, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 1e-3, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 1e-3, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 1e-3, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 1e-3, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 1e-3]

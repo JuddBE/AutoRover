@@ -1,0 +1,23 @@
+controller_manager:
+  ros_parameters:
+    update_rate: 100
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+      left_wheel_names: ["wheel_fl_joint", "wheel_bl_joint"]
+      right_wheel_names: ["wheel_fr_joint", "wheel_br_joint"]
+      publish_rate: 50
+      cmd_vel_timeout: 0.5  # Timeout for velocity commands (in seconds)
+      odom_frame_id: "odom"
+      base_frame_id: "base_link"
+      open_loop: false
+      enable_odom_tf: true
+      linear.x.has_velocity_limits: true
+      linear.x.max_velocity: 3.0  # Max linear velocity in m/s
+      linear.x.min_velocity: -3.0  # Min linear velocity in m/s
+      angular.z.has_velocity_limits: true
+      angular.z.max_velocity: 1.5  # Max angular velocity in rad/s
+      angular.z.min_velocity: -1.5  # Min angular velocity in rad/s
