@@ -12,6 +12,7 @@ setup.py
 config/ekf_config.yaml
 launch/rover.launch.py
 models/model.config
+models/my_robot.urdf
 models/my_robot.urdf.xacro
 models/my_robot.xacro
 models/rover.gazebo
@@ -22,11 +23,14 @@ rover/__init__.py
 rover/controller.py
 rover/localization.py
 rover/mapping.py
+rover/old_track.py
 rover/path_planning.py
 rover/path_tracking.py
+rover_description/my_robot.config
+rover_description/my_robot.sdf
 test/test_copyright.py
 test/test_flake8.py
 test/test_pep257.py
 worlds/moon.sdf
-worlds/rover.sdf
+worlds/rover.world
 worlds/test.sdf

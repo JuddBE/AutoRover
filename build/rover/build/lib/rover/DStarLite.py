@@ -1,4 +1,7 @@
-"""NOT A NODE, JUST A HELPER CLASS (IMPLEMENTS ALGORITHM) FOR PATH PLANNING"""
+"""
+NOT A NODE, JUST A HELPER CLASS.
+IMPLEMENTS D* LITE ALGORITHM FOR PATH PLANNING.
+"""
 
 from rover.PriorityQueue import PriorityQueue, Priority
 from math import sqrt

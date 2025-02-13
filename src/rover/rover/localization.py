@@ -1,3 +1,8 @@
+"""
+Extended Kalman Filter which fuses wheel odometry and IMU data to estimate rover pose.
+Featuring guest star ChatGPT, who is now the proud owner of a shiny new PhD in Kalman Filtering after explaining and providing code snippets. Just this one node though, ChatGPT.
+"""
+
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
@@ -8,33 +13,32 @@ import numpy as np
 class Localize(Node):
     def __init__(self):
         super().__init__('localization')
+        
          # State vector [x, y, z, roll, pitch, yaw, vx, vy, vz, wx, wy, wz]
         self.state = np.zeros(12)
 
         # Covariance matrix
-        # self.P = np.eye(12) * 0.1
         self.P = np.diag([
-            0.05, 0.05, 0.05,    # Uncertainty in position (x, y, z)
-            0.001, 0.001, 0.001,  # Uncertainty in orientation (roll, pitch, yaw)
-            0.2, 0.2, 0.2,    # Uncertainty in linear velocity (v_x, v_y, v_z)
-            0.001, 0.001, 0.001   # Uncertainty in angular velocity (ω_x, ω_y, ω_z)
+            0.5, 0.5, 0.5,  # Position (x, y, z)
+            0.001, 0.001, 0.001,  # Orientation (roll, pitch, yaw)
+            1.0, 1.0, 1.0,  # Linear velocity (vx, vy, vz)
+            0.001, 0.001, 0.001  # Angular velocity (wx, wy, wz)
         ])
 
         # Process noise
-        # self.Q = np.eye(12) * 0.02
         self.Q = np.diag([
-            0.7, 0.7, 0.7,    # Process noise for position (x, y, z)
-            0.001, 0.001, 0.001, # Process noise for orientation (roll, pitch, yaw)
-            0.2, 0.2, 0.2,    # Process noise for linear velocity (v_x, v_y, v_z)
-            0.001, 0.001, 0.001  # Process noise for angular velocity (ω_x, ω_y, ω_z)
+            2.0, 2.0, 2.0,  # Position (x, y, z)
+            0.02, 0.02, 0.02,  # Orientation (roll, pitch, yaw)
+            0.9, 0.9, 0.9,  # Linear velocity (vx, vy, vz)
+            0.015, 0.015, 0.015  # Angular velocity (wx, wy, wz)
         ])
 
         # Measurement noise
         self.R = np.diag([
-            0.4, 0.4, 0.4,  # x, y, z (wheel odom)
-            0.001, 0.001, 0.001,  # roll, pitch, yaw (IMU)
-            0.2, 0.2, 0.2,  # vx, vy, vz (wheel odom)
-            0.001, 0.001, 0.001  # wx, wy, wz (IMU)
+            2.0, 2.0, 2.0,  # x, y, z (wheel odom)
+            0.01, 0.01, 0.01,  # roll, pitch, yaw (IMU)
+            0.9, 0.9, 0.9,  # vx, vy, vz (wheel odom)
+            0.01, 0.01, 0.01  # wx, wy, wz (IMU)
         ])
 
         # Identity matrix
@@ -46,26 +50,25 @@ class Localize(Node):
         self.fused_odom = np.zeros(12)
 
         # Subscribe to the odom topic.
-        self.steer_subscription = self.create_subscription(Odometry, '/odom', self.odom_callback, 1)
+        self.odom_subscription = self.create_subscription(Odometry, '/odom', self.odom_callback, 1)
 
         # Subscribe to the IMU topic.
-        self.steer_subscription = self.create_subscription(Imu, '/imu', self.imu_callback, 1)
+        self.imu_subscription = self.create_subscription(Imu, '/imu', self.imu_callback, 1)
 
-        # Create a publisher on the cmd_vel topic
+        # Create a publisher on the fused odom (position) topic
         self.publisher_ = self.create_publisher(Odometry, 'position', 1)
 
-        # Timer to periodically send messages
-        self.dt = 0.02
+        # Timer to periodically publish fused odometry.
+        self.dt = 0.01
         self.timer = self.create_timer(self.dt, self.publish_fused_odom)
 
     def predict(self):
-        # Update state estimation using motion model
-        # Update position using velocities
+        # Update position using vels
         self.state[0] += self.state[6] * self.dt
         self.state[1] += self.state[7] * self.dt
         self.state[2] += self.state[8] * self.dt
 
-        # Update orientation using angular velocities
+        # Update orientation using angular vels
         self.state[3] += self.state[9] * self.dt
         self.state[4] += self.state[10] * self.dt
         self.state[5] += self.state[11] * self.dt
@@ -83,10 +86,10 @@ class Localize(Node):
 
     def update(self):
         H = np.zeros((12, 12))
-        H[0:3, 0:3] = np.eye(3)  # Odometry provides x, y, z
-        H[3:6, 3:6] = np.eye(3)  # IMU provides roll, pitch, yaw
-        H[6:9, 6:9] = np.eye(3)  # Odometry provides vx, vy, vz
-        H[9:12, 9:12] = np.eye(3)  # IMU provides wx, wy, wz
+        H[0:3, 0:3] = np.eye(3)  # x, y, z
+        H[3:6, 3:6] = np.eye(3)  # roll, pitch, yaw
+        H[6:9, 6:9] = np.eye(3)  # vx, vy, vz
+        H[9:12, 9:12] = np.eye(3)  # wx, wy, wz
 
         # Compute the measurement residual (y)
         y = self.fused_odom - (H @ self.state)
@@ -108,10 +111,10 @@ class Localize(Node):
         if self.latest_odom is None or self.latest_imu is None:
             return
 
-        # EKF predict step using wheel odom and some IMU data for orientation.
+        # EKF predict using wheel odom and IMU data for orientation.
         self.predict()
 
-        # EKF Update Step using IMU data.
+        # EKF update using IMU data.
         self.update()
 
         # Construct filtered odom message.
@@ -145,7 +148,7 @@ class Localize(Node):
         self.publisher_.publish(msg)
 
     def odom_callback(self, msg):
-        # Replace odom orientation with imu orientation and publish.
+        # Initialize estimates.
         x = msg.pose.pose.position.x
         y = msg.pose.pose.position.y
         z = msg.pose.pose.position.z
@@ -153,7 +156,7 @@ class Localize(Node):
         vy = msg.twist.twist.linear.y
         vz = msg.twist.twist.linear.z
 
-        # Save latest wheel odometry and state estimate.
+        # Save latest wheel odom and estimates.
         self.latest_odom = np.array([x, y, z, vx, vy, vz])
         self.fused_odom[0] = x
         self.fused_odom[1] = y
@@ -163,14 +166,14 @@ class Localize(Node):
         self.fused_odom[8] = vz
 
     def imu_callback(self, msg):
-        # Handle orientation odometry.
+        # Handle orientation.
         quaternion = msg.orientation
         rotation = R.from_quat([quaternion.x, quaternion.y, quaternion.z, quaternion.w])
         
-        # Convert rotation to roll, pitch, yaw.
+        # Convert to roll, pitch, yaw.
         roll, pitch, yaw = rotation.as_euler('xyz', degrees=False)
 
-        # Update angular velocities
+        # Update angular vels
         wx = msg.angular_velocity.x
         wy = msg.angular_velocity.y
         wz = msg.angular_velocity.z
@@ -183,16 +186,6 @@ class Localize(Node):
         self.fused_odom[9] = wx
         self.fused_odom[10] = wy
         self.fused_odom[11] = wz
-
-        # Use covariance from the IMU message
-        # imu_orientation_cov = np.array(msg.orientation_covariance).reshape(3, 3)
-        # imu_angular_velocity_cov = np.array(msg.angular_velocity_covariance).reshape(3, 3)
-
-        # # Update measurement noise matrix
-        # self.R = np.block([
-        #     [imu_orientation_cov, np.zeros((3, 3))],
-        #     [np.zeros((3, 3)), imu_angular_velocity_cov]
-        # ])
 
 def main(args=None):
     rclpy.init(args=args)

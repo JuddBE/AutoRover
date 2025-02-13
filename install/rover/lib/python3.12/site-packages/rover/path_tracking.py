@@ -1,3 +1,7 @@
+"""
+Pure pursuit (alternative version) path tracking algorithm. Takes the nearest point that is at least lookahead distance away from rover. Calculates the steering angle to that point.
+"""
+
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
@@ -18,7 +22,6 @@ class PathFollower(Node):
         self.yaw = 0
         
         # Waypoint coords (converted from tile indices to coordinates in the center of a tile).
-        # self.waypoints = np.array([[1.0,1.0],[1.0,0.0],[2.0,0.0],[3.0,1.0],[2.0,2.0],[1.0,1.0],[0.0,0.0],[-1.0,0.0]])
         self.waypoints = np.array([])
         self.x_idx = 0
         self.y_idx = 0
@@ -35,6 +38,9 @@ class PathFollower(Node):
         self.y_min_lim = self.init_y_min_lim
         self.y_max_lim = self.init_y_max_lim
         self.global_origin = np.array([0.0, 0.0])
+
+        # Pure pursuit variables
+        self.lookahead_dist = self.tile_size * 1.8
 
         # Subscribe to the waypoint topic.
         self.waypoint_subscription = self.create_subscription(Float32MultiArray, '/waypoints', self.waypoint_callback, 1)
@@ -56,22 +62,36 @@ class PathFollower(Node):
         self.timer = self.create_timer(0.1, self.pure_pursuit)
 
     def pure_pursuit_control(self, target):
+        """
+        Calculates the steering angle to the target point.
+        """
+
+        # return if there is no target
+        if target is None:
+            return
+
         # Calculate desired steering angle for pure pursuit
         dx = target[0] - self.rover_pos[0]
         dy = target[1] - self.rover_pos[1]
-        target_angle = np.arctan2(dy,dx)
+        dist = sqrt(dx**2 + dy**2)
 
-        # self.get_logger().info(str(target_angle))
+        # Turn into local rover x and y
+        local_x = dx * np.cos(self.yaw) + dy * np.sin(self.yaw)
+        local_y = -dx * np.sin(self.yaw) + dy * np.cos(self.yaw)
 
-        # Calculate steering angle
-        steering_angle = target_angle - self.yaw
-        steering_angle = np.arctan2(np.sin(steering_angle), np.cos(steering_angle))  # Normalize to [-pi, pi]
-
-        # self.get_logger().info(str(self.yaw))
+        curvature = 0.0
+        if local_x != 0:
+            curvature = 2 * local_y / (dist ** 2)
+        
+        steering_angle = curvature
 
         return steering_angle
 
     def pure_pursuit(self):
+        """
+        Pure pursuit algorithm. Finds target point and the steering angle to follow.
+        """
+
         # Initialize message to controller.
         msg = Point()
         msg.x = 0.0
@@ -84,7 +104,6 @@ class PathFollower(Node):
             sig_msg.data = True
             self.signal_publisher.publish(sig_msg)
             self.received_response = False
-            self.get_logger().info('Signal to pathing: (' + str(self.rover_x_idx) + "," + str(self.rover_y_idx) + ")")
 
         # Check if there are any more waypoints.
         if len(self.waypoints) <= 0:
@@ -94,16 +113,14 @@ class PathFollower(Node):
             return
 
         # Check if next waypoint has been reached.
-        if sqrt((self.waypoints[0][0] - self.rover_pos[0])**2 + (self.waypoints[0][1] - self.rover_pos[1])**2) <= self.tile_size / 2.2:
-            self.get_logger().info(f"Waypoint reached: ({str(self.x_idx)},{str(self.y_idx)})")
-            self.get_logger().info(f"Waypoint coord: ({str(self.waypoints[0][0])},{str(self.waypoints[0][1])})")
-            self.waypoints = np.delete(self.waypoints, 0, axis=0)
-            # self.get_logger().info(str(self.received_response))
+        if sqrt((self.waypoints[0][0] - self.rover_pos[0])**2 + (self.waypoints[0][1] - self.rover_pos[1])**2) <= self.tile_size / 2:
             # self.get_logger().info(f"Waypoint reached: ({str(self.x_idx)},{str(self.y_idx)})")
-            self.get_logger().info(f"Rover tiles: ({str(self.rover_x_idx)},{str(self.rover_y_idx)})")
-            self.get_logger().info(f"Rover pos: ({str(self.rover_pos[0])},{str(self.rover_pos[1])})")
+            # self.get_logger().info(f"Waypoint coord: ({str(self.waypoints[0][0])},{str(self.waypoints[0][1])})")
+            self.waypoints = np.delete(self.waypoints, 0, axis=0)
+            # self.get_logger().info(f"Rover tiles: ({str(self.rover_x_idx)},{str(self.rover_y_idx)})")
+            # self.get_logger().info(f"Rover pos: ({str(self.rover_pos[0])},{str(self.rover_pos[1])})")
 
-            # Check if there are any more waypoints.""
+            # Check if there are any more waypoints.
             if len(self.waypoints) <= 0:
                 self.get_logger().info("No path to follow.")
                 self.steer_publisher.publish(msg)
@@ -112,37 +129,57 @@ class PathFollower(Node):
             self.x_idx = int((self.waypoints[0][0] - self.x_min_lim) / self.tile_size)
             self.y_idx = int((self.waypoints[0][1] - self.y_min_lim) / self.tile_size)
         
-        # Check if there are any more waypoints.""
+        # Check if there are any more waypoints.
         if len(self.waypoints) <= 0:
             self.get_logger().info("No path to follow.")
             self.steer_publisher.publish(msg)
             return
 
-        steering_angle = self.pure_pursuit_control(self.waypoints[0])
+        target = None # If no targets are at least lookahead distance away, just use last waypoint.
+        # Find target point at least lookahead distance away.
+        num_waypoints = len(self.waypoints)
+        for i in range(num_waypoints):
+            if num_waypoints == 1:
+                target = self.waypoints[0]
+                self.x_idx = int((self.waypoints[0][0] - self.x_min_lim) / self.tile_size)
+                self.y_idx = int((self.waypoints[0][1] - self.y_min_lim) / self.tile_size)
+                break
+            if sqrt((self.waypoints[i][0] - self.rover_pos[0])**2 + (self.waypoints[i][1] - self.rover_pos[1])**2) >= self.lookahead_dist:
+                target = self.waypoints[i]
+                self.x_idx = int((self.waypoints[i][0] - self.x_min_lim) / self.tile_size)
+                self.y_idx = int((self.waypoints[i][1] - self.y_min_lim) / self.tile_size)
+                break
+            else:
+                self.waypoints = np.delete(self.waypoints, 0, axis=0)
+                i -= 1
+                num_waypoints -= 1
+
+        steering_angle = self.pure_pursuit_control(target)
         msg.x = steering_angle
         msg.y = 1.0
         self.steer_publisher.publish(msg)
 
     def odom_callback(self, msg):
-        # Handle positional odometry.
+        """
+        Update rover position and orientation from fused odom.
+        """
+
+        # Handle positional odom.
         position = msg.pose.pose.position
         self.rover_pos[0] = position.x
         self.rover_pos[1] = position.y
-        self.rover_x_idx = int((self.rover_pos[0] - self.x_min_lim) / self.tile_size)
-        self.rover_y_idx = int((self.rover_pos[1] - self.y_min_lim) / self.tile_size)
 
-        # rover_x_temp = int((self.rover_pos[0] - self.x_min_lim) / self.tile_size)
-        # rover_y_temp = int((self.rover_pos[1] - self.y_min_lim) / self.tile_size)
+        rover_x_temp = int((self.rover_pos[0] - self.x_min_lim) / self.tile_size)
+        rover_y_temp = int((self.rover_pos[1] - self.y_min_lim) / self.tile_size)
 
         # If rover changes tile, update the coordinates and calculate a new path.
-        # if self.rover_x_idx != rover_x_temp or self.rover_y_idx != rover_y_temp:
-        #     self.rover_x_idx = rover_x_temp
-        #     self.rover_y_idx = rover_y_temp
-        #     sig_msg = Bool()
-        #     sig_msg.data = True
-        #     self.signal_publisher.publish(sig_msg)
-        #     self.received_response = False
-        #     self.get_logger().info('Signal to pathing: (' + str(self.rover_x_idx) + "," + str(self.rover_y_idx) + ")")
+        if self.rover_x_idx != rover_x_temp or self.rover_y_idx != rover_y_temp:
+            self.rover_x_idx = rover_x_temp
+            self.rover_y_idx = rover_y_temp
+            sig_msg = Bool()
+            sig_msg.data = True
+            self.signal_publisher.publish(sig_msg)
+            self.received_response = False
 
         # Handle orientation odometry.
         quaternion = msg.pose.pose.orientation
@@ -152,8 +189,12 @@ class PathFollower(Node):
         _, _, self.yaw = rotation.as_euler('xyz', degrees=False)
 
     def origin_callback(self, msg):
-        self.global_origin[0] = msg.x
-        self.global_origin[1] = msg.y
+        """
+        Track updated map origin, allowing to shift the map when the rover nears the map edge.
+        """
+
+        self.global_origin[0] = msg.x + self.init_x_max_lim
+        self.global_origin[1] = msg.y + self.init_y_max_lim
 
         # Track new x and y limits.
         self.x_max_lim = self.init_x_max_lim + self.global_origin[0]
@@ -162,14 +203,15 @@ class PathFollower(Node):
         self.y_min_lim = self.init_y_min_lim + self.global_origin[1]
     
     def waypoint_callback(self, msg):
+        """
+        Get waypoint updates from path planning node, updating the path to follow.
+        """
+
         # Read waypoint messages, then convert from tiles to coordinates centered on tiles.
         rows = msg.layout.dim[0].size
         cols = msg.layout.dim[1].size
 
         new_waypoints = np.array(msg.data, dtype=int).reshape((rows, cols))
-        self.x_idx = new_waypoints[0][0]
-        self.y_idx = new_waypoints[0][1]
-        self.get_logger().info('Received from pathing: (' + str(self.x_idx) + "," + str(self.y_idx) + ")")
 
         # Convert from tiles to coordinates centered on tiles.
         self.waypoints = (new_waypoints - (self.global_size / 2)) * self.tile_size + self.tile_size / 2 + self.global_origin

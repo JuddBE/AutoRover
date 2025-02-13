@@ -1,3 +1,7 @@
+"""
+Uses D* Lite algorithm for efficient path planning. Currently works for planning paths, but can be further optimized to reduce replanning time.
+"""
+
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry, OccupancyGrid
@@ -26,9 +30,9 @@ class PathPlanner(Node):
         self.y_max_lim = self.init_y_max_lim
         self.global_origin = (0.0, 0.0)
 
-        # Path settingss
-        self.s_start = (0, 0)  # Rover tile coords.
-        self.s_goal = (98, 75)  # Should eventually be found by selecting a tile in space.
+        # Path settings
+        self.s_start = (self.global_width // 2, self.global_height // 2)  # Rover tile coords.
+        self.s_goal = (130, 74)  # Should eventually be found by selecting a tile in space.
         self.init_s_goal = self.s_goal
         self.temp_goal = self.s_goal  # Used to track temporary goals if final goal is outside of map.
         self.rover_pos = np.array([0.0,0.0])  # Rover coords.
@@ -47,6 +51,10 @@ class PathPlanner(Node):
         self.publisher_ = self.create_publisher(Float32MultiArray, 'waypoints', 1)
 
     def update_start(self):
+        """
+        Updates start as the current tile.
+        """
+
         # Assign rover coords to their tiles on the map.
         x_idx = int((self.rover_pos[0] - self.x_min_lim) / self.tile_size)
         y_idx = int((self.rover_pos[1] - self.y_min_lim) / self.tile_size)
@@ -101,14 +109,20 @@ class PathPlanner(Node):
     #     return None  # No valid intersection
 
     def plan_path(self):
+        """
+        Implements loop for D* Lite algorithm and publishes waypoints/path.
+        """
+        
         self.update_start()
 
         if self.s_start == self.s_goal:
             self.get_logger().info("At goal destination.")
             return
 
-        self.get_logger().info("Signal received: " + str(self.s_start))
-        self.get_logger().info(str(self.s_goal))
+        self.get_logger().info("")
+        self.get_logger().info("AT: " + str(self.s_start))
+        self.get_logger().info("GOAL: " + str(self.s_goal))
+        
         self.DStarL = DStarLite(self.s_start, self.s_goal, self.global_width, self.global_height, self.cost_map)
         self.DStarL.initDStar()
         self.DStarL.computeShortestPath()
@@ -134,22 +148,24 @@ class PathPlanner(Node):
 
             new_waypoints.append([self.DStarL.s_start[0], self.DStarL.s_start[1]])
         
-        self.get_logger().info("Sending waypoint: " + str(new_waypoints[0]))
         self.waypoints = new_waypoints
 
         self.publish_waypoints()
     
 
-    # Updates the map and causes a new path to be planned.
     def map_callback(self, msg):
+        """
+        When new map is received from /trav_map topic, update the cost map and replan path.
+        """
+
         # Calculate shift in map to apply to goal tile coords.
-        x_shift = int((msg.info.origin.position.x - self.global_origin[0]) / self.tile_size)
-        y_shift = int((msg.info.origin.position.y - self.global_origin[1]) / self.tile_size)
+        x_shift = int((msg.info.origin.position.x - self.global_origin[0] + self.init_x_max_lim) / self.tile_size)
+        y_shift = int((msg.info.origin.position.y - self.global_origin[1] + self.init_y_max_lim) / self.tile_size)
 
         # Extract map data.
         self.global_width = msg.info.width
         self.global_height = msg.info.height
-        self.global_origin = (msg.info.origin.position.x, msg.info.origin.position.y)  #  Absolute global coords of origin point in map.
+        self.global_origin = (msg.info.origin.position.x + self.init_x_max_lim, msg.info.origin.position.y + self.init_y_max_lim)  #  Absolute global coords of origin point in map.
 
         # Track new x and y limits.
         self.x_max_lim = self.init_x_max_lim + self.global_origin[0]
@@ -170,6 +186,10 @@ class PathPlanner(Node):
         self.plan_path()
     
     def publish_waypoints(self):
+        """
+        Publishes waypoints/path to /waypoints topic when new path is planned.
+        """
+
         # Flatten the 2D grid into a 1D array.
         num_points = len(self.waypoints)
         flat_waypoints = [column for row in self.waypoints for column in row]
@@ -185,12 +205,20 @@ class PathPlanner(Node):
         self.publisher_.publish(msg)
 
     def odom_callback(self, msg):
+        """
+        Update rover position and orientation from fused odom.
+        """
+
         # Handle positional odometry.
         position = msg.pose.pose.position
         self.rover_pos[0] = position.x
         self.rover_pos[1] = position.y
     
     def goal_callback(self, msg):
+        """
+        Updates goal tile coords when new goal is clicked in rviz.
+        """
+
         x_idx = int((msg.point.x - self.x_min_lim) / self.tile_size)
         y_idx = int((msg.point.y - self.y_min_lim) / self.tile_size)
 
