@@ -1,6 +1,4 @@
 # AutoRover
-Simulated autonomous rover project by Judd Brock-Edgar using Ros2 Jazzy and Gazebo Harmonic. Traverses 3D environment while avoiding obstacles to reach a goal location on the map.
-
 Most aspects of the project are hand-made, including self-made code for SLAM, sensor fusion (EKF), navigation, path planning, and path tracking/controls. All these aspects were done without the use of plugins, including SLAM and navigation, to prioritize practical understanding of these areas outside of just ROS2 implementation.
 
 Here is a very simplified rundown of what was implemented:
