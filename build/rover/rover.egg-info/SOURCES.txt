@@ -21,9 +21,9 @@ rover/DStarLite.py
 rover/PriorityQueue.py
 rover/__init__.py
 rover/controller.py
+rover/deprecated_track.py
 rover/localization.py
 rover/mapping.py
-rover/old_track.py
 rover/path_planning.py
 rover/path_tracking.py
 rover_description/my_robot.config

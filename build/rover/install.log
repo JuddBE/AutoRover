@@ -1,6 +1,6 @@
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/mapping.py
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/controller.py
-/home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/old_track.py
+/home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/deprecated_track.py
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__init__.py
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/path_tracking.py
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/localization.py
@@ -9,7 +9,7 @@
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/PriorityQueue.py
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__pycache__/mapping.cpython-312.pyc
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__pycache__/controller.cpython-312.pyc
-/home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__pycache__/old_track.cpython-312.pyc
+/home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__pycache__/deprecated_track.cpython-312.pyc
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__pycache__/__init__.cpython-312.pyc
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__pycache__/path_tracking.cpython-312.pyc
 /home/juddbe/AutoRover/install/rover/lib/python3.12/site-packages/rover/__pycache__/localization.cpython-312.pyc

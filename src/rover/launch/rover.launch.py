@@ -92,7 +92,7 @@ def generate_launch_description():
         name="rviz2",
         output='log',
         parameters=[{'use_sim_time': use_sim_time}],
-        # arguments=['-d', rviz_config_path]
+        arguments=['-d', rviz_config_path]
     )
 
     # # # EKF node (Use wheel odometry and IMU to find rover position, replaced by custom-made localization node below which performs much better)

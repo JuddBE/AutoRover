@@ -12,7 +12,7 @@ class TwistPublisher(Node):
 
         # Controller variables
         self.max_vel = 0.5  # m/s
-        self.max_turn_vel = 0.4  # rad/s
+        self.max_turn_vel = 0.3  # rad/s
         self.vel = self.max_vel
         self.angular_vel = 0.0
 

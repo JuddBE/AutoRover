@@ -131,7 +131,7 @@
                 </scan>
                 <range>
                     <min>0.3</min>
-                    <max>8.0</max>
+                    <max>8.5</max>
                     <resolution>0.01</resolution>
                     <noise>
                         <type>gaussian</type>

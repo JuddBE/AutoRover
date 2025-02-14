@@ -1,3 +1,7 @@
+"""
+Priority Queue for DStarLite.py
+"""
+
 class Priority:
     """
     handle lexicographic order of keys
